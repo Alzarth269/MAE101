@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tính Định thức & Ma trận Nghịch đảo</title>
+    
+    <!-- Tích hợp MathJax để hiển thị công thức LaTeX -->
+    <script>
+        MathJax = {
+          tex: {
+            inlineMath: [['$', '$'], ['\\(', '\\)']],
+            displayMath: [['$$', '$$'], ['\\[', '\\]']]
+          },
+          svg: {
+            fontCache: 'global'
+          }
+        };
+    </script>
+    <script type="text/javascript" id="MathJax-script" async
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js">
+    </script>
+
+    <style>
+        /* CSS cho toàn bộ trang */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f0f2f5;
+            color: #1c1e21;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .container {
+            background-color: #ffffff;
+            padding: 25px 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #0d6efd;
+            margin-bottom: 20px;
+        }
+
+        /* Phần điều khiển */
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        .controls label {
+            font-weight: 600;
+        }
+
+        .controls select {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            font-size: 16px;
+        }
+
+        /* CSS cho nút bấm 3D đẹp mắt */
+        .btn {
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            color: white;
+            transition: all 0.1s ease-in-out;
+            position: relative;
+            top: 0;
+        }
+
+        .btn-primary {
+            background-color: #0d6efd;
+            box-shadow: 0 4px 0 #0a58ca;
+        }
+
+        .btn-secondary {
+            background-color: #6c757d;
+            box-shadow: 0 4px 0 #565e64;
+        }
+        
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn:active {
+            box-shadow: 0 2px 0 #0a58ca;
+            top: 2px;
+        }
+
+        .btn-secondary:active {
+            box-shadow: 0 2px 0 #565e64;
+            top: 2px;
+        }
+
+        /* CSS cho phần nhập ma trận */
+        #matrix-input {
+            display: grid;
+            gap: 10px;
+            margin: 20px auto;
+            justify-content: center;
+        }
+
+        #matrix-input input {
+            width: 60px;
+            height: 40px;
+            text-align: center;
+            font-size: 18px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            -moz-appearance: textfield; /* Firefox */
+        }
+        
+        /* Ẩn mũi tên tăng/giảm của input number */
+        #matrix-input input::-webkit-outer-spin-button,
+        #matrix-input input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        /* CSS cho phần kết quả */
+        #output {
+            margin-top: 25px;
+            text-align: left;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+            min-height: 100px;
+        }
+
+        #output p {
+            margin: 15px 0;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Tính Định thức & Ma trận Nghịch đảo</h1>
+        <p>Chọn kích thước, nhập giá trị hoặc tạo ngẫu nhiên, sau đó nhấn "Tính toán".</p>
+
+        <div class="controls">
+            <label for="matrix-size">Kích thước:</label>
+            <select id="matrix-size">
+                <option value="2">2x2</option>
+                <option value="3" selected>3x3</option>
+                <option value="4">4x4</option>
+            </select>
+            <button id="calculate-btn" class="btn btn-primary">Tính toán</button>
+            <button id="random-btn" class="btn btn-secondary">Tạo Ngẫu nhiên</button>
+        </div>
+
+        <div id="matrix-input">
+            <!-- Các ô nhập liệu sẽ được tạo bởi JavaScript -->
+        </div>
+
+        <div id="output">
+            <p>Kết quả sẽ được hiển thị ở đây...</p>
+        </div>
+    </div>
+
+    <script>
+        // --- PHẦN JAVASCRIPT ---
+
+        // Lấy các phần tử DOM
+        const sizeSelector = document.getElementById('matrix-size');
+        const matrixInputDiv = document.getElementById('matrix-input');
+        const calculateBtn = document.getElementById('calculate-btn');
+        const randomBtn = document.getElementById('random-btn');
+        const outputDiv = document.getElementById('output');
+
+        // --- CÁC HÀM XỬ LÝ GIAO DIỆN ---
+
+        /**
+         * Tạo các ô nhập liệu cho ma trận dựa trên kích thước được chọn
+         * @param {number} size - Kích thước của ma trận (ví dụ: 3 cho 3x3)
+         */
+        function createMatrixInput(size) {
+            matrixInputDiv.innerHTML = ''; // Xóa các ô cũ
+            matrixInputDiv.style.gridTemplateColumns = `repeat(${size}, auto)`;
+            for (let i = 0; i < size; i++) {
+                for (let j = 0; j < size; j++) {
+                    const input = document.createElement('input');
+                    input.type = 'number';
+                    input.id = `cell-${i}-${j}`;
+                    input.placeholder = `a${i+1}${j+1}`;
+                    matrixInputDiv.appendChild(input);
+                }
+            }
+        }
+
+        /**
+         * Đọc các giá trị từ giao diện và trả về một mảng 2D
+         * @returns {number[][]} Ma trận dưới dạng mảng 2D
+         */
+        function readMatrixFromUI() {
+            const size = parseInt(sizeSelector.value);
+            const matrix = [];
+            for (let i = 0; i < size; i++) {
+                const row = [];
+                for (let j = 0; j < size; j++) {
+                    const cellValue = document.getElementById(`cell-${i}-${j}`).value;
+                    // Mặc định là 0 nếu ô trống
+                    row.push(parseFloat(cellValue) || 0);
+                }
+                matrix.push(row);
+            }
+            return matrix;
+        }
+
+        /**
+         * Tạo một ma trận ngẫu nhiên và điền vào các ô nhập liệu
+         */
+        function generateRandomMatrix() {
+            const size = parseInt(sizeSelector.value);
+            for (let i = 0; i < size; i++) {
+                for (let j = 0; j < size; j++) {
+                    const randomValue = Math.floor(Math.random() * 21) - 10; // Số nguyên từ -10 đến 10
+                    document.getElementById(`cell-${i}-${j}`).value = randomValue;
+                }
+            }
+        }
+        
+        /**
+         * Chuyển đổi một mảng 2D thành chuỗi LaTeX
+         * @param {number[][]} matrix - Ma trận đầu vào
+         * @returns {string} Chuỗi LaTeX
+         */
+        function matrixToLatex(matrix) {
+            if (!matrix || matrix.length === 0) return '';
+            let latexString = '\\begin{bmatrix}\n';
+            matrix.forEach(row => {
+                latexString += row.map(cell => Number.isInteger(cell) ? cell : cell.toFixed(2)).join(' & ') + ' \\\\\n';
+            });
+            latexString += '\\end{bmatrix}';
+            return latexString;
+        }
+
+        // --- CÁC HÀM TÍNH TOÁN TOÁN HỌC ---
+
+        /**
+         * Lấy ma trận con (minor) bằng cách loại bỏ một hàng và một cột
+         * @param {number[][]} matrix - Ma trận gốc
+         * @param {number} rowToRemove - Chỉ số hàng cần bỏ
+         * @param {number} colToRemove - Chỉ số cột cần bỏ
+         * @returns {number[][]} Ma trận con
+         */
+        function getMinor(matrix, rowToRemove, colToRemove) {
+            return matrix
+                .filter((_, rowIndex) => rowIndex !== rowToRemove)
+                .map(row => row.filter((_, colIndex) => colIndex !== colToRemove));
+        }
+
+        /**
+         * Tính định thức của một ma trận bằng phương pháp khai triển cofactor (đệ quy)
+         * @param {number[][]} matrix - Ma trận cần tính
+         * @returns {number} Giá trị định thức
+         */
+        function calculateDeterminant(matrix) {
+            const n = matrix.length;
+            if (n === 1) return matrix[0][0];
+            if (n === 2) return matrix[0][0] * matrix[1][1] - matrix[0][1] * matrix[1][0];
+
+            let determinant = 0;
+            for (let j = 0; j < n; j++) {
+                const minor = getMinor(matrix, 0, j);
+                determinant += matrix[0][j] * Math.pow(-1, j) * calculateDeterminant(minor);
+            }
+            return determinant;
+        }
+        
+        /**
+         * Tính ma trận nghịch đảo bằng phương pháp ma trận phụ hợp (adjugate)
+         * @param {number[][]} matrix - Ma trận cần nghịch đảo
+         * @returns {number[][] | null} Ma trận nghịch đảo hoặc null nếu không tồn tại
+         */
+        function calculateInverse(matrix) {
+            const det = calculateDeterminant(matrix);
+            if (det === 0) return null; // Ma trận suy biến, không có nghịch đảo
+
+            const n = matrix.length;
+            if (n === 1) return [[1 / matrix[0][0]]];
+
+            // Tạo ma trận các cofactor
+            const cofactorMatrix = [];
+            for (let i = 0; i < n; i++) {
+                const cofactorRow = [];
+                for (let j = 0; j < n; j++) {
+                    const minor = getMinor(matrix, i, j);
+                    const cofactor = Math.pow(-1, i + j) * calculateDeterminant(minor);
+                    cofactorRow.push(cofactor);
+                }
+                cofactorMatrix.push(cofactorRow);
+            }
+
+            // Chuyển vị ma trận cofactor để có ma trận phụ hợp (adjugate)
+            const adjugateMatrix = [];
+            for (let j = 0; j < n; j++) {
+                const row = [];
+                for (let i = 0; i < n; i++) {
+                    row.push(cofactorMatrix[i][j]);
+                }
+                adjugateMatrix.push(row);
+            }
+
+            // Nhân ma trận phụ hợp với 1/det
+            const inverseMatrix = adjugateMatrix.map(row => 
+                row.map(cell => cell / det)
+            );
+
+            return inverseMatrix;
+        }
+
+        // --- HÀM CHÍNH ĐỂ THỰC HIỆN TÍNH TOÁN VÀ HIỂN THỊ ---
+
+        function performCalculations() {
+            const matrixA = readMatrixFromUI();
+            const detA = calculateDeterminant(matrixA);
+            const inverseA = calculateInverse(matrixA);
+
+            let html = `<h3>1. Ma trận đã nhập (A)</h3>`;
+            html += `$$ A = ${matrixToLatex(matrixA)} $$`;
+            
+            html += `<h3>2. Tính Định thức det(A)</h3>`;
+            html += `<p>Sử dụng phương pháp khai triển theo cofactor, ta có:</p>`;
+            html += `$$ \\det(A) = ${detA.toFixed(4)} $$`;
+
+            html += `<h3>3. Tìm Ma trận Nghịch đảo A⁻¹</h3>`;
+            if (inverseA === null) {
+                html += `<p>Vì $\\det(A) = 0$, ma trận A là ma trận suy biến (singular) và không có ma trận nghịch đảo.</p>`;
+            } else {
+                html += `<p>Vì $\\det(A) \\neq 0$, ma trận A khả nghịch. Ma trận nghịch đảo $A^{-1}$ được tính bằng công thức:</p>`;
+                html += `$$ A^{-1} = \\frac{1}{\\det(A)} \\text{adj}(A) $$`;
+                html += `<p>Kết quả:</p>`;
+                html += `$$ A^{-1} = ${matrixToLatex(inverseA)} $$`;
+            }
+            
+            outputDiv.innerHTML = html;
+            // Yêu cầu MathJax render lại nội dung mới
+            MathJax.typesetPromise([outputDiv]);
+        }
+
+        // --- GÁN CÁC SỰ KIỆN ---
+
+        // Khi thay đổi kích thước ma trận
+        sizeSelector.addEventListener('change', (e) => {
+            createMatrixInput(parseInt(e.target.value));
+        });
+
+        // Khi nhấn nút tính toán
+        calculateBtn.addEventListener('click', performCalculations);
+        
+        // Khi nhấn nút tạo ngẫu nhiên
+        randomBtn.addEventListener('click', generateRandomMatrix);
+
+        // Khởi tạo giao diện lần đầu
+        document.addEventListener('DOMContentLoaded', () => {
+            createMatrixInput(parseInt(sizeSelector.value));
+            generateRandomMatrix(); // Tạo sẵn một ma trận mẫu
+        });
+
+    </script>
+</body>
+</html>```
+
+### **Cách sử dụng:**
+
+1.  **Sao chép (Copy)** toàn bộ đoạn mã trên.
+2.  Mở một trình soạn thảo văn bản đơn giản (như Notepad trên Windows, TextEdit trên Mac, hoặc VS Code).
+3.  **Dán (Paste)** đoạn mã vào.
+4.  Lưu file với tên bất kỳ nhưng phải có đuôi là `.html`, ví dụ: `matrix_calculator.html`.
+5.  Tìm file vừa lưu và **mở nó bằng trình duyệt web** (nhấp đúp vào file là được).
+
+Ứng dụng sẽ chạy ngay lập tức trên trình duyệt của bạn mà không cần cài đặt thêm bất cứ thứ gì
